@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>TaxaFácil – Simulador de Maquininha</title>
+<link rel="icon" type="image/png" href="assets/taxade.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #07090f;
+    --surface: #0e1221;
+    --surface2: #151a2d;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00e5b0;
+    --accent2: #00b8f5;
+    --accent3: #7b5cf5;
+    --warn: #ff6b6b;
+    --text: #eef0f8;
+    --muted: #6b7394;
+    --card-h: 220px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background mesh */
+  body::before {
+    content:'';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 10% 0%, rgba(0,229,176,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 90% 80%, rgba(123,92,245,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,184,245,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 430px; margin: 0 auto; padding-bottom: 40px; }
+
+  /* HEADER */
+  header {
+    padding: 52px 24px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo-area { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo-text span { color: var(--accent); }
+  .header-badge {
+    background: rgba(0,229,176,0.1);
+    border: 1px solid rgba(0,229,176,0.2);
+    color: var(--accent);
+    font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* STORE SELECTOR */
+  .store-section { padding: 0 24px 20px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 12px;
+  }
+  .store-toggle {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 5px;
+    gap: 4px;
+    border: 1px solid var(--border);
+  }
+  .store-btn {
+    padding: 14px 10px;
+    border: none; background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    border-radius: 12px; cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .store-btn .store-emoji { font-size: 22px; }
+  .store-btn.active {
+    background: linear-gradient(135deg, rgba(0,229,176,0.15), rgba(0,184,245,0.15));
+    color: var(--text);
+    border: 1px solid rgba(0,229,176,0.3);
+    box-shadow: 0 0 20px rgba(0,229,176,0.1);
+  }
+
+  /* INPUT */
+  .input-section { padding: 0 24px 24px; }
+  .input-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .input-wrapper:focus-within { border-color: rgba(0,229,176,0.4); }
+  .input-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 8px; letter-spacing: 0.3px; }
+  .currency-row { display: flex; align-items: center; gap: 8px; }
+  .currency-symbol { font-size: 28px; font-weight: 300; color: var(--muted); }
+  .value-input {
+    background: transparent; border: none; outline: none;
+    font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 700;
+    color: var(--text); width: 100%;
+    caret-color: var(--accent);
+  }
+  .value-input::placeholder { color: rgba(255,255,255,0.1); }
+
+  /* PAYMENT TYPE TABS */
+  .tabs-section { padding: 0 24px 20px; }
+  .tabs {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 8px;
+  }
+  .tab-btn {
+    padding: 12px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.25s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .tab-btn svg, .tab-btn img { width: 28px; height: 20px; object-fit: contain; }
+  .tab-btn.active {
+    background: var(--surface2);
+    border-color: rgba(0,229,176,0.35);
+    color: var(--text);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .tab-btn.active.pix-tab { border-color: rgba(0,229,176,0.5); }
+  .tab-btn.active.debit-tab { border-color: rgba(0,184,245,0.5); }
+  .tab-btn.active.credit-tab { border-color: rgba(123,92,245,0.5); }
+
+  /* BANDEIRA SELECTOR (for debit/credit) */
+  .bandeira-section { padding: 0 24px 24px; animation: fadeUp 0.3s ease; }
+  .bandeiras-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .bandeira-btn {
+    padding: 14px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer; transition: all 0.25s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    color: var(--muted); font-size: 11px; font-weight: 600;
+  }
+  .bandeira-btn img { width: 44px; height: 28px; object-fit: contain; }
+  .bandeira-btn.active {
+    background: var(--surface2);
+    border-color: rgba(0,229,176,0.35);
+    color: var(--text);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  /* RESULT CARDS */
+  .results-section { padding: 0 24px; }
+  .result-main {
+    background: linear-gradient(135deg, rgba(0,229,176,0.12), rgba(0,184,245,0.08));
+    border: 1px solid rgba(0,229,176,0.2);
+    border-radius: 24px;
+    padding: 28px 24px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-main::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(0,229,176,0.15), transparent 70%);
+    pointer-events: none;
+  }
+  .result-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 6px; letter-spacing: 0.3px; }
+  .result-taxa { 
+    font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .result-desc { font-size: 12px; color: var(--muted); }
+
+  .result-split {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 12px;
+  }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px 16px;
+  }
+  .result-card .rc-label { font-size: 11px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+  .result-card .rc-value {
+    font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700;
+    line-height: 1;
+  }
+  .rc-value.green { color: var(--accent); }
+  .rc-value.red { color: var(--warn); }
+  .rc-value.blue { color: var(--accent2); }
+
+  /* CHART */
+  .chart-section { padding: 20px 24px 0; }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 20px;
+  }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .chart-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+  .chart-sub { font-size: 11px; color: var(--muted); }
+  .chart-canvas-wrap { position: relative; height: 180px; }
+
+  /* COMPARISON TABLE */
+  .compare-section { padding: 16px 24px 0; }
+  .compare-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+  .compare-header-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .compare-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px; align-items: center;
+    transition: background 0.2s;
+  }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row:hover { background: rgba(255,255,255,0.02); }
+  .compare-row .method { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .compare-row .rate { font-weight: 600; font-family: 'Syne', sans-serif; font-size: 14px; }
+  .compare-row .net { font-weight: 600; }
+  .lower { color: var(--accent); }
+  .higher { color: var(--warn); }
+
+  /* Info banner */
+  .info-banner {
+    margin: 16px 24px 0;
+    background: rgba(123,92,245,0.08);
+    border: 1px solid rgba(123,92,245,0.2);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12px; color: var(--muted); line-height: 1.5;
+  }
+  .info-banner .info-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .anim { animation: fadeUp 0.35s ease; }
+
+  /* Number change animation */
+  @keyframes numPop {
+    0% { transform: scale(0.85); opacity: 0; }
+    60% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .num-pop { animation: numPop 0.3s ease; }
+
+  /* PIX icon SVG inline */
+  .pix-svg { width: 28px; height: 28px; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 0 24px 24px; }
+
+  .hidden { display: none !important; }
+  
+  /* Pulse dot */
+  .pulse-dot {
+    display: inline-block; width: 8px; height: 8px;
+    background: var(--accent); border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse-anim 1.5s ease infinite;
+  }
+  @keyframes pulse-anim {
+    0%,100% { box-shadow: 0 0 0 0 rgba(0,229,176,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(0,229,176,0); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header>
+    <div class="header-badge"><span class="pulse-dot"></span>AO VIVO</div>
+  </header>
+
+  <!-- Store selector -->
+  <div class="store-section">
+    <div class="section-label">Estabelecimento</div>
+    <div class="store-toggle">
+      <button class="store-btn active" id="btn-s1" onclick="selectStore(1)">
+        
+        Sorveteria 01
+      </button>
+      <button class="store-btn" id="btn-s2" onclick="selectStore(2)">
+     
+        Sorveteria 02
+      </button>
+    </div>
+  </div>
+
+  <!-- Value Input -->
+  <div class="input-section">
+    <div class="input-wrapper">
+      <div class="input-label">Valor da venda</div>
+      <div class="currency-row">
+        <span class="currency-symbol">R$</span>
+        <input class="value-input" id="valor" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01" value="" oninput="calcular()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Type Tabs -->
+  <div class="tabs-section">
+    <div class="section-label">Forma de pagamento</div>
+    <div class="tabs">
+      <button class="tab-btn pix-tab active" id="tab-pix" onclick="selectTab('pix')">
+        <!-- PIX SVG -->
+        <img src="assets/pix.png">
+          <path fill="#00e5b0" d="M257.5 63.5c-24.7 0-47.9 9.6-65.4 27L63.5 219.1c-36.1 36.1-36.1 94.7 0 130.8l128.6 128.6c17.4 17.4 40.7 27 65.4 27s47.9-9.6 65.4-27l128.6-128.6c36.1-36.1 36.1-94.7 0-130.8L323 90.5C305.5 73 282.2 63.5 257.5 63.5zm0 40c13.4 0 26.2 5.3 35.6 14.8l128.6 128.6c19.7 19.7 19.7 51.6 0 71.3L293.1 446.8c-9.5 9.5-22.2 14.8-35.6 14.8s-26.2-5.3-35.6-14.8L93.3 318.2c-19.7-19.7-19.7-51.6 0-71.3L221.9 118.3C231.3 108.8 244.1 103.5 257.5 103.5z"/>
+          <path fill="#00e5b0" d="M175 210 L255 290 L335 210 M175 302 L255 222 L335 302"/>
+        </svg>
+        PIX
+      </button>
+      <button class="tab-btn debit-tab" id="tab-debito" onclick="selectTab('debito')">
+        <svg viewBox="0 0 40 26" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="38" height="24" rx="3" fill="none" stroke="#6b7394" stroke-width="1.5"/>
+          <rect x="4" y="8" width="10" height="7" rx="1" fill="#6b7394"/>
+          <line x1="4" y1="19" x2="20" y2="19" stroke="#6b7394" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Débito
+      </button>
+      <button class="tab-btn credit-tab" id="tab-credito" onclick="selectTab('credito')">
+        <svg viewBox="0 0 40 26" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="38" height="24" rx="3" fill="none" stroke="#6b7394" stroke-width="1.5"/>
+          <rect x="1" y="8" width="38" height="5" fill="#6b7394"/>
+          <rect x="22" y="16" width="14" height="3" rx="1.5" fill="#6b7394"/>
+        </svg>
+        Crédito
+      </button>
+    </div>
+  </div>
+
+  <!-- Bandeira Selector -->
+  <div class="bandeira-section" id="bandeira-section">
+    <div class="section-label">Bandeira do cartão</div>
+    <div class="bandeiras-grid">
+      <button class="bandeira-btn active" id="band-visa" onclick="selectBandeira('visa')">
+        <img src="assets/visa.png" alt="Visa" onerror="this.parentElement.innerHTML='<span style=\'font-size:20px\'>💳</span><span>Visa</span>'">
+        <span>Visa</span>
+      </button>
+      <button class="bandeira-btn" id="band-master" onclick="selectBandeira('master')">
+        <img src="assets/mastercard.png" alt="Mastercard" onerror="this.parentElement.innerHTML='<span style=\'font-size:20px\'>💳</span><span>Master</span>'">
+        <span>Master</span>
+      </button>
+      <button class="bandeira-btn" id="band-elo" onclick="selectBandeira('elo')">
+        <img src="assets/elo.png" alt="Elo" onerror="this.parentElement.innerHTML='<span style=\'font-size:20px\'>💳</span><span>Elo</span>'">
+        <span>Elo</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-section" id="results-section">
+    <div class="result-main">
+      <div class="result-label">Taxa aplicada</div>
+      <div class="result-taxa" id="result-taxa">0,00%</div>
+      <div class="result-desc" id="result-desc">Selecione a forma de pagamento</div>
+    </div>
+    <div class="result-split">
+      <div class="result-card">
+        <div class="rc-label">Você recebe</div>
+        <div class="rc-value green" id="result-net">R$ –</div>
+      </div>
+      <div class="result-card">
+        <div class="rc-label">Taxa cobrada</div>
+        <div class="rc-value red" id="result-fee">R$ –</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-section anim">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Comparativo de Taxas</div>
+          <div class="chart-sub" id="chart-sub">Todas as modalidades</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison Table -->
+  <div class="compare-section anim">
+    <div class="compare-card">
+      <div class="compare-header-row">
+        <span>Modalidade</span>
+        <span>Taxa</span>
+        <span id="col-net-label">Líquido</span>
+      </div>
+      <div id="compare-body"></div>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="info-banner">
+    <span class="info-icon">ℹ️</span>
+    <span>Os valores são simulações baseadas nas taxas cadastradas. O valor líquido real pode variar conforme antecipação e outros encargos.</span>
+  </div>
+
+  <div style="height:32px"></div>
+</div>
+
+<script>
+// ---- DATA ----
+const TAXAS = {
+  1: {
+    pix:    { all: 0.005 },
+    debito: { visa: 0.01, master: 0.01, elo: 0.0165 },
+    credito:{ visa: 0.0341, master: 0.0341, elo: 0.0438 }
+  },
+  2: {
+    pix:    { all: 0.005 },
+    debito: { visa: 0.0105, master: 0.0105, elo: 0.0164 },
+    credito:{ visa: 0.0396, master: 0.0396, elo: 0.0474 }
+  }
+};
+
+let store = 1, tab = 'pix', bandeira = 'visa';
+let chart = null;
+
+function selectStore(n) {
+  store = n;
+  document.getElementById('btn-s1').classList.toggle('active', n===1);
+  document.getElementById('btn-s2').classList.toggle('active', n===2);
+  calcular();
+  updateChart();
+  updateTable();
+}
+
+function selectTab(t) {
+  tab = t;
+  ['pix','debito','credito'].forEach(x => document.getElementById('tab-'+x).classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('bandeira-section').classList.toggle('hidden', t === 'pix');
+  calcular();
+  updateChart();
+  updateTable();
+}
+
+function selectBandeira(b) {
+  bandeira = b;
+  ['visa','master','elo'].forEach(x => document.getElementById('band-'+x).classList.remove('active'));
+  document.getElementById('band-'+b).classList.add('active');
+  calcular();
+  updateChart();
+  updateTable();
+}
+
+function getTaxa() {
+  const t = TAXAS[store];
+  if (tab === 'pix') return t.pix.all;
+  return t[tab][bandeira];
+}
+
+function fmt(v) {
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtR(v) {
+  return 'R$ ' + fmt(v);
+}
+function fmtP(v) {
+  return (v * 100).toFixed(2).replace('.', ',') + '%';
+}
+
+function calcular() {
+  const raw = parseFloat(document.getElementById('valor').value) || 0;
+  const taxa = getTaxa();
+  const fee = raw * taxa;
+  const net = raw - fee;
+
+  const taxaEl = document.getElementById('result-taxa');
+  taxaEl.textContent = fmtP(taxa);
+  taxaEl.classList.remove('num-pop');
+  void taxaEl.offsetWidth;
+  taxaEl.classList.add('num-pop');
+
+  let desc = '';
+  if (tab === 'pix') desc = 'PIX · Sorveteria 0' + store;
+  else desc = (tab === 'debito' ? 'Débito' : 'Crédito') + ' · ' + bandeira.charAt(0).toUpperCase() + bandeira.slice(1) + ' · Sorveteria 0' + store;
+  document.getElementById('result-desc').textContent = desc;
+
+  document.getElementById('result-net').textContent = raw > 0 ? fmtR(net) : 'R$ –';
+  document.getElementById('result-fee').textContent = raw > 0 ? '- ' + fmtR(fee) : 'R$ –';
+}
+
+// ---- CHART ----
+function getChartData() {
+  const t = TAXAS[store];
+  if (tab === 'pix') {
+    return {
+      labels: ['PIX'],
+      datasets: [{
+        label: 'Taxa (%)',
+        data: [t.pix.all * 100],
+        backgroundColor: ['rgba(0,229,176,0.7)'],
+        borderColor: ['#00e5b0'],
+        borderWidth: 2, borderRadius: 10, borderSkipped: false
+      }]
+    };
+  }
+  const src = t[tab];
+  return {
+    labels: ['Visa', 'Mastercard', 'Elo'],
+    datasets: [{
+      label: 'Taxa (%)',
+      data: [src.visa * 100, src.master * 100, src.elo * 100],
+      backgroundColor: ['rgba(0,184,245,0.7)','rgba(255,107,107,0.7)','rgba(123,92,245,0.7)'],
+      borderColor: ['#00b8f5','#ff6b6b','#7b5cf5'],
+      borderWidth: 2, borderRadius: 10, borderSkipped: false
+    }]
+  };
+}
+
+function updateChart() {
+  document.getElementById('chart-sub').textContent =
+    tab === 'pix' ? 'PIX – Sorveteria 0'+store :
+    (tab==='debito'?'Débito':'Crédito')+' – Sorveteria 0'+store;
+
+  if (chart) {
+    chart.data = getChartData();
+    chart.update('active');
+    return;
+  }
+  const ctx = document.getElementById('myChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: getChartData(),
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#151a2d',
+          titleColor: '#eef0f8', bodyColor: '#00e5b0',
+          borderColor: 'rgba(0,229,176,0.2)', borderWidth: 1,
+          cornerRadius: 12, padding: 12,
+          callbacks: {
+            label: ctx => ' ' + ctx.parsed.y.toFixed(2).replace('.',',') + '%'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#6b7394', font: { family: 'DM Sans', size: 12, weight: '600' } },
+          border: { display: false }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: {
+            color: '#6b7394', font: { family: 'DM Sans', size: 11 },
+            callback: v => v.toFixed(1)+'%'
+          },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// ---- TABLE ----
+function updateTable() {
+  const raw = parseFloat(document.getElementById('valor').value) || 100;
+  const t1 = TAXAS[1], t2 = TAXAS[2];
+  const rows = [];
+
+  if (tab === 'pix') {
+    rows.push({ method: 'PIX', r1: t1.pix.all, r2: t2.pix.all });
+  } else {
+    ['visa','master','elo'].forEach(b => {
+      rows.push({
+        method: b.charAt(0).toUpperCase()+b.slice(1),
+        r1: t1[tab][b], r2: t2[tab][b]
+      });
+    });
+  }
+
+  let html = '';
+  // Header update
+  document.getElementById('col-net-label').textContent = 'Sorv.01 vs 02';
+
+  rows.forEach(r => {
+    const net1 = raw * (1 - r.r1), net2 = raw * (1 - r.r2);
+    const lower1 = r.r1 <= r.r2;
+    html += `<div class="compare-row">
+      <span class="method">${r.method}</span>
+      <span class="rate ${lower1?'lower':'higher'}">${fmtP(r.r1)} <span style="color:var(--muted);font-size:10px">/ ${fmtP(r.r2)}</span></span>
+      <span class="net ${lower1?'green':'red'}" style="color:${lower1?'var(--accent)':'var(--warn)'}; font-size:12px;">
+        ${fmtR(net1)}<br><span style="color:var(--muted);font-size:11px">${fmtR(net2)}</span>
+      </span>
+    </div>`;
+  });
+
+  document.getElementById('compare-body').innerHTML = html;
+}
+
+// Init
+selectTab('pix');
+updateChart();
+updateTable();
+document.getElementById('valor').addEventListener('input', () => { calcular(); updateTable(); });
+</script>
+</body>
+</html>
